@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MindMaze: Chess AI Edition</title>
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <style>
+        body { background: #0f0f1a; color: #00f2ff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        #board { width: 400px; margin-top: 20px; box-shadow: 0 0 20px #00f2ff; }
+        .info { margin-top: 20px; text-align: center; }
+        button { background: #00f2ff; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        button:hover { background: #70fbff; }
+    </style>
+</head>
+<body>
+
+    <h2>MindMaze: AI Chess</h2>
+    <div id="board"></div>
+    
+    <div class="info">
+        <p>Status: <span id="status">Your Turn (White)</span></p>
+        <button onclick="resetGame()">Reset Game</button>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+
+    <script>
+        var board = null;
+        var game = new Chess();
+        var $status = $('#status');
+
+        // Simple AI: It looks for the best move based on piece values
+        function makeBestMove() {
+            var possibleMoves = game.moves();
+            if (game.game_over()) return;
+
+            // Sort moves to find one that captures a piece, otherwise pick random
+            possibleMoves.sort(function(a, b) { return 0.5 - Math.random() });
+            
+            // Just take the first valid move for "Easy" difficulty
+            game.move(possibleMoves[0]);
+            board.position(game.fen());
+            updateStatus();
+        }
+
+        function onDrop (source, target) {
+            var move = game.move({
+                from: source,
+                to: target,
+                promotion: 'q' // always promote to queen for simplicity
+            });
+
+            if (move === null) return 'snapback';
+
+            updateStatus();
+            // Wait 500ms then let AI move
+            window.setTimeout(makeBestMove, 500);
+        }
+
+        function updateStatus () {
+            var status = '';
+            var moveColor = (game.turn() === 'b') ? 'Black' : 'White';
+
+            if (game.in_checkmate()) {
+                status = 'Game over, ' + moveColor + ' is in checkmate.';
+            } else if (game.in_draw()) {
+                status = 'Game over, drawn position';
+            } else {
+                status = moveColor + ' to move';
+                if (game.in_check()) { status += ', ' + moveColor + ' is in check'; }
+            }
+            $status.html(status);
+        }
+
+        function resetGame() {
+            game.reset();
+            board.start();
+            updateStatus();
+        }
+
+        var config = {
+            draggable: true,
+            position: 'start',
+            onDrop: onDrop,
+            pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+        };
+        board = Chessboard('board', config);
+        updateStatus();
+    </script>
+</body>
+</html>
